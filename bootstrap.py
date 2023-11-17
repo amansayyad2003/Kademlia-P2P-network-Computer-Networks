@@ -98,7 +98,8 @@ while(1):
             prefix = ind
             continue
         # print("pre: " + prefix)
-        info_dict[prefix] = list_info_node[index]
+        info_dict[prefix] = []
+        info_dict[prefix].append(list_info_node[index])
         prefix = ind
         index = index + 1 
     
