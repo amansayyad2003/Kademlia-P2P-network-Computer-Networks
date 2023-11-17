@@ -103,6 +103,11 @@ while(1):
         prefix = ind
         index = index + 1 
     
+    addr = list(addr)
+    addr.append(node_id)
+    formatted_values1[node_id] = addr
+    print(formatted_values1)
+
     info_dict = str(info_dict)
     
     print(info_dict)
