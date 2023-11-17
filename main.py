@@ -76,7 +76,7 @@ def receive_reply(closest_node, my_socket, piece_hash, nodeid, my_ipaddress, por
     response = None
     while True:
         message = f'REQ:{nodeid}:{my_ipaddress}:{port_no}:{file_name}:{piece_hash}'
-        closest_node_id, closest_node_ip, closest_node_port = closest_node
+        closest_node_ip, closest_node_port, closest_node_id = closest_node
         my_socket.sendto(message.encode(), (closest_node_ip, closest_node_port))
         start_time = time.time()
         time_difference = 0
@@ -106,6 +106,23 @@ def is_all_received(hash_dict):
 
     return True
 
+def find_closest_node(random_hash):
+    global routing_table
+    min_hash_value = 234253
+    min_node = None
+    for key in routing table:
+        if min_node is None:
+            if len(routing_table[key]):
+            min_hash_value = int(random_hash, 16) ^ int(routing_table[key][0][2], 16)
+            min_node = routing_table[key][0]
+        else:
+            if len(routing_table[key]):
+                current_hash_value = int(random_hash, 16) ^ int(routing_table[key][0][2], 16)
+                if current_hash_value < min_hash_value:
+                    min_hash_value = current_hash_value
+                    min_node = routing_table[key][0]
+    return min_node
+
 def receive_pieces(hashes, my_ipaddress, port_no, nodeid, my_socket, file_name):
     global routing_table#added
     is_hashpiece_received = {}
@@ -115,7 +132,7 @@ def receive_pieces(hashes, my_ipaddress, port_no, nodeid, my_socket, file_name):
     while not is_all_received(is_hashpiece_received):
         random_hash = hashes[random.randint(0, len(hashes))]
         if not is_hashpiece_received[random_hash]:
-            closest_node = find_closest_node(random_hash, routing_table)
+            closest_node = find_closest_node(random_hash)
             if closest_node is None:
                 return None
             response = receive_reply(closest_node, my_socket, random_hash, nodeid, my_ipaddress, port_no,file_name)
@@ -127,7 +144,7 @@ def receive_pieces(hashes, my_ipaddress, port_no, nodeid, my_socket, file_name):
 
 
 
-routing_table = {[['192.168.61.203', 23423, '8ff558aaf31aa86ab6b999609f7353a8a2d1d80a']]}
+routing_table = {'0': [['192.168.61.203', 23423, '8ff558aaf31aa86ab6b999609f7353a8a2d1d80a']]}
 conn = mysql.connector.connect(host='localhost', password='PetronesTower1.', user='root', database='MyDatabase')
 cursor = conn.cursor()
 print('connection established')
@@ -135,7 +152,7 @@ my_ipaddress = input('Enter your ip address: ')
 port_no = random.randint(20000, 60000)
 my_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 my_socket.bind((my_ipaddress, port_no))
-nodeid = hashlib.sha1(f'{my_ipaddress}:{port_no}'.encode()).digest()
+nodeid = hashlib.sha1(f'{my_ipaddress}:{port_no}'.encode()).digest().hex()
 username = None
 passwd = None
 fullname = None
