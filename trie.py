@@ -105,6 +105,7 @@ class Trie:
 
     def get_node_id(self, index, root2):
         if not root2:
+            print("!")
             return "NULL"
         root1 = root2
         index = self.compliment_index(index)
@@ -112,6 +113,7 @@ class Trie:
         count = 0
         root1 = root1.children[index]
         if not root1:
+            print("@")
             return "NULL"
         while not root1.isEndOfWord:
             while True:
@@ -119,7 +121,8 @@ class Trie:
                 if root1.children[ind] and not root1.isEndOfWord:
                     id_rem += str(ind)
                     break
-                if count >= 10:      # TODO: Think once again about it
+                if count >= 100:      # TODO: Think once again about it
+                    print("$")
                     id_rem = "NULL" 
                     return id_rem
                 count = count + 1
@@ -140,6 +143,7 @@ class Trie:
             # print(i)
             index = peer_id[i]
             id_no2 = self.get_node_id(self.get_index(index), root_node) 
+            print("id_no: " + id_no2)
             if id_no2 == "NULL":
                 mylist.insert(len(mylist), None)
                 continue

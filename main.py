@@ -1,4 +1,5 @@
 import random
+import ast
 import hashlib
 import mysql.connector                                                                                                                                                  
 import os
@@ -6,6 +7,7 @@ import threading
 from decode_torrent import *
 from torrent_generation import *
 import time
+import json
 seeder_message = None
 is_seeder_message_present = False
 leecher_message = None
@@ -146,12 +148,14 @@ def find_closest_node(random_hash):
             if len(routing_table[key]):
                 min_hash_value = int(random_hash, 16) ^ int(routing_table[key][0][2], 16)
                 min_node = routing_table[key][0]
+                print('Metric', min_hash_value)
         else:
             if len(routing_table[key]):
                 current_hash_value = int(random_hash, 16) ^ int(routing_table[key][0][2], 16)
                 if current_hash_value < min_hash_value:
                     min_hash_value = current_hash_value
                     min_node = routing_table[key][0]
+                    print('Metric', min_hash_value)
     return min_node
 
 def receive_pieces(hashes, my_ipaddress, port_no, nodeid, my_socket, file_name):
@@ -164,6 +168,8 @@ def receive_pieces(hashes, my_ipaddress, port_no, nodeid, my_socket, file_name):
         random_hash = hashes[random.randint(0, len(hashes))]
         if not is_hashpiece_received[random_hash]:
             closest_node = find_closest_node(random_hash)
+            print('closest node', closest_node)
+r           exit()
             if closest_node is None:
                 return None
             response = receive_reply(closest_node, my_socket, random_hash, nodeid, my_ipaddress, port_no,file_name)
@@ -185,6 +191,7 @@ nodeid = hashlib.sha1(f'{my_ipaddress}:{port_no}'.encode()).digest().hex()
 username = None
 passwd = None
 fullname = None
+routing_table = None
 while True:
     print('-----Menu----')
     print('1. Login')
@@ -193,14 +200,20 @@ while True:
 
     option = int(input('Enter your option: '))
     if option == 1:
-        username, passwd = show_login_menu()
-        query = 'SELECT exists(SELECT 1 from userInfo where username = %s and passwd = %s)'
-        cursor.execute(query, (username, passwd))
-        results = cursor.fetchone()
-        if results[0]:
+#        username, passwd = show_login_menu()
+#        query = 'SELECT exists(SELECT 1 from userInfo where username = %s and passwd = %s)'
+#        cursor.execute(query, (username, passwd))
+#        results = cursor.fetchone()
+#        if results[0]:
+        if True:
             print('Login successful')
             #Construct routing table
-            routing_table = get_routing_table(nodeid, my_socket)
+            route_table1 = get_routing_table(nodeid, my_socket)
+            print(route_table1)
+            print(type(route_table1))
+            r = json.loads(route_table1)
+            routing_table = ast.literal_eval(r)
+            print(type(routing_table))
             print(routing_table)
             seeder_thread = threading.Thread(target=seeder, args=(my_socket,my_ipaddress,port_no,nodeid))
             seeder_thread.start()

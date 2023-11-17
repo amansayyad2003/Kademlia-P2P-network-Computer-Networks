@@ -1,16 +1,17 @@
-
+import json
 import socket
 import trie
 import binascii
 
-hex_values = [
+''' hex_values = [
     "ffffffffffffff0d43e32f1bee18d502791be0e4",
     "d264d67ead367e2418f8904da6b4a26f020ae6a9",
     "90b0095bda5e8bb132924c0b557046fb8459e2c8",
     "8694667eadda24cf239530aecc8497150cd83f56",
     "56668c669713d924ea36c2ef893f8b9d0143ccd3"
-]
+]''' 
 
+hex_values = []
 # Now you can use this list in your Python code.
 
 def hex_to_binary(hex_string):
@@ -56,16 +57,20 @@ while(1):
     t = trie.Trie()
     
     # node_id = "56668c669713d924ea36c2ef893f8b9d0143ccd3"
-    for i in hex_values:
+    #for i in hex_values:
         # j = string_to_hex(i)
-        k = hex_to_binary(i)
+       # k = hex_to_binary(i)
         # print(k, end="\n\n")
-        t.insert(k)
+       # t.insert(k)
     
     # node_id = hex_to_binary(node_id) 
     # print("Khud ka node id: " + node_id)
     
     info_node = t.get_bucket_node(node_id)
+    print(info_node)
+    t.insert(node_id)
+    i = t.search(node_id)
+    print(i)
     # print(info_node)
     list_info_node = []
     # print(info_node)
@@ -103,12 +108,13 @@ while(1):
         prefix = ind
         index = index + 1 
     
-    addr = list(addr)
-    addr.append(node_id)
-    formatted_values1[node_id] = addr
-    print(formatted_values1)
+    addr1 = list(addr)
+    addr1.append(node_id)
+    formatted_values1[node_id] = addr1
+    #print(formatted_values1)
 
     info_dict = str(info_dict)
     
-    print(info_dict)
-    my_socket.sendto(info_dict.encode(), addr) 
+    #print(info_dict)
+    
+    my_socket.sendto(json.dumps(info_dict).encode(), addr) 
