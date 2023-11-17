@@ -59,6 +59,6 @@ def create_torrent_file(file_path, piece_size):
         torrent_file.write(bencoded_data)
 
     
-filename = input('Enter filename: ')
+#filename = input('Enter filename: ')
 # Example usage
-create_torrent_file(filename, 256)
+#create_torrent_file(filename, 256)

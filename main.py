@@ -126,13 +126,7 @@ def receive_pieces(hashes, my_ipaddress, port_no, nodeid, my_socket, file_name):
     return ''.join(pieces_list)
 
 
-def get_routing_table(node_id, my_socket):
-    global my_ipaddress, port_no
-    message = node_id
-    my_socket.sendto(message.encode(), (bootstrap_ip, bootstrap_port_no))
-    data, addr = my_socket.recvfrom(1000)
-
-routing_table = {[['192.168.61.203', 23423, '8ff558aaf31aa86ab6b999609f7353a8a2d1d80a']]}
+#routing_table = {[['192.168.61.203', 23423, '8ff558aaf31aa86ab6b999609f7353a8a2d1d80a']]}
 conn = mysql.connector.connect(host='localhost', password='PetronesTower1.', user='root', database='MyDatabase')
 cursor = conn.cursor()
 print('connection established')
@@ -140,7 +134,7 @@ my_ipaddress = input('Enter your ip address: ')
 port_no = random.randint(20000, 60000)
 my_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 my_socket.bind((my_ipaddress, port_no))
-nodeid = hashlib.sha1(f'{my_ipaddress}:{port_no}'.encode()).digest()
+nodeid = hashlib.sha1(f'{my_ipaddress}:{port_no}'.encode()).digest().hex()
 username = None
 passwd = None
 fullname = None
@@ -159,7 +153,6 @@ while True:
         if results[0]:
             print('Login successful')
             #Construct routing table
-            routing_table = get_routing_table(nodeid)
             seeder_thread = threading.Thread(target=seeder, args=(my_socket,my_ipaddress,port_no,nodeid))
             seeder_thread.start()
             receive_thread = threading.Thread(target=receive_thread, args=(my_socket))
