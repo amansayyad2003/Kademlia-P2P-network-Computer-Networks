@@ -46,10 +46,10 @@ def seeder(my_socket,ip_address,port_no,nodeid):
         file_data = files_dict[filename]
         if hash_value in file_data:
             piece_data = file_data[hash_value]
-            response_message = f'RESP:{nodeid}:{ip_address}:{port_no}:{piece_data}'
+            response_message = f'RESP:{nodeid}:{ip_address}:{port_no}:{file_name}:{piece_data}'
             my_socket.sendto(response_message.encode(), (leecher_ip_address, leecher_port_no))
         else:
-            next_closest_node = closest_node()
+            next_closest_node = find_closest_node(hash_value)
             response_message = f'RESA:{nodeid}:{ip_address}:{port_no}:{file_name}:{next_closest_node[0]}:{next_closest_node[1]}:{next_closest_node[2]}'
             my_socket.sendto(response_message.encode(), (leecher_ip_address, leecher_port_no))
         
@@ -69,6 +69,25 @@ def receive_thread(my_socket):
         else:
             leecher_message = data.decode()
             is_leecher_message_present = True
+def update_routing_table(node, mynode_id):
+    global routing_table
+    mynodeid_bin = bin(int(mynode_id, 16))[2:]
+    node_id_bin = bin(int(node[0], 16))[2:]
+    prefix = ''
+    i = 0
+    while i <  len(node_id_bin):
+        if mynodeid_bin[i] == node_id_bin[i]:
+            prefix += node_id_bin[i]
+        else:
+            break
+        i += 1
+    prefix += node_id_bin[i]
+    if prefix in routing_table:
+        routing_table[prefix].append([node[1], int(node[2]), node[0]])
+    else:
+        routing_table[prefix] = [[node[1], int(node[2]), node[0]]]
+    return
+
 
 def receive_reply(closest_node, my_socket, piece_hash, nodeid, my_ipaddress, portno,file_name):
     global leecher_message
@@ -86,16 +105,19 @@ def receive_reply(closest_node, my_socket, piece_hash, nodeid, my_ipaddress, por
                 break
             a = 2
         if time_difference >= 2:
+            is_leecher_message_present = False
             return ''
         data = leecher_message
+        data = data
         is_leecher_message_present = False
-        data_list = data.decode().split(':')
+        data_list = data.split(':')
         if data_list[0] == 'RESA':
-            closest_node_ip = data_list[6]
-            closest_node_port = data_list[7]
-            closest_node_id = data_list[5]
+            closest_node_ip = data_list[5]
+            closest_node_port = int(data_list[6])
+            closest_node_id = data_list[7]
         elif data_list[0] == 'RESP':
             response = data_list[5:].join(':')
+            update_routing_table(data_list[1:4], nodeid)
             break
     return response
 
@@ -113,8 +135,8 @@ def find_closest_node(random_hash):
     for key in routing table:
         if min_node is None:
             if len(routing_table[key]):
-            min_hash_value = int(random_hash, 16) ^ int(routing_table[key][0][2], 16)
-            min_node = routing_table[key][0]
+                min_hash_value = int(random_hash, 16) ^ int(routing_table[key][0][2], 16)
+                min_node = routing_table[key][0]
         else:
             if len(routing_table[key]):
                 current_hash_value = int(random_hash, 16) ^ int(routing_table[key][0][2], 16)
@@ -174,6 +196,7 @@ while True:
             seeder_thread = threading.Thread(target=seeder, args=(my_socket,my_ipaddress,port_no,nodeid))
             seeder_thread.start()
             receive_thread = threading.Thread(target=receive_thread, args=(my_socket))
+            receive_thread.start()
             while True:
                 cmd = input('Enter command: ')
                 if cmd == 'exit':
@@ -186,7 +209,7 @@ while True:
                         hashes = file_info['piece-hashes']
                         no_of_pieces = len(hashes)
                         piece_length = file_info['piece-length']
-                        received_file = receive_pieces(hashes, routing_table, my_ipaddress, port_no, nodeid, my_socket,output_filename)
+                        received_file = receive_pieces(hashes, my_ipaddress, port_no, nodeid, my_socket,output_filename)
                         with open(output_filename, 'w') as file:
                             file.write(received_file)
                             print('File received successfully')
