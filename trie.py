@@ -111,7 +111,7 @@ class Trie:
         index = self.compliment_index(index)
         id_rem = str(index) 
         count = 0
-        root1 = root1.children[index]
+        #root1 = root1.children[index]
         if not root1:
             print("@")
             return "NULL"

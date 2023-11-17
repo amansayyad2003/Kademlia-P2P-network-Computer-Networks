@@ -39,22 +39,30 @@ def seeder(my_socket,ip_address,port_no,nodeid):
         message = seeder_message
         is_seeder_message_present = False
         # update routing table 
+#        update_routing_table()
         message_list = message.split(':')
         leecher_node_id = message_list[1]
         leecher_ip_address = message_list[2]
         leecher_port_no = int(message_list[3])#added
-        updating_routing_table([leecher_node_id, leecher_ip_address, leecher_port_no], nodeid)
+#        update_routing_table([leecher_node_id, leecher_ip_address, leecher_port_no], nodeid)
         file_name = message_list[4]
         hash_value = message_list[5]
-        file_data = files_dict[filename]
-        if hash_value in file_data:
-            piece_data = file_data[hash_value]
-            response_message = f'RESP:{nodeid}:{ip_address}:{port_no}:{file_name}:{piece_data}'
-            my_socket.sendto(response_message.encode(), (leecher_ip_address, leecher_port_no))
+        if filename in files_dict:
+            file_data = files_dict[filename]
+            if hash_value in file_data:
+                piece_data = file_data[hash_value]
+                response_message = f'RESP:{nodeid}:{ip_address}:{port_no}:{file_name}:{piece_data}'
+                my_socket.sendto(response_message.encode(), (leecher_ip_address, leecher_port_no))
+            else:
+                next_closest_bucket = find_closest_node(hash_value)
+                next_closest_node = next_closest_bucket[random.randint(0, len(next_closest_bucket) - 1)]
+                response_message = f'RESA:{nodeid}:{ip_address}:{port_no}:{file_name}:{next_closest_node[0]}:{next_closest_node[1]}:{next_closest_node[2]}'
+                my_socket.sendto(response_message.encode(), (leecher_ip_address, leecher_port_no))
         else:
-            next_closest_node = find_closest_node(hash_value)
-            response_message = f'RESA:{nodeid}:{ip_address}:{port_no}:{file_name}:{next_closest_node[0]}:{next_closest_node[1]}:{next_closest_node[2]}'
-            my_socket.sendto(response_message.encode(), (leecher_ip_address, leecher_port_no))
+                next_closest_bucket = find_closest_node(hash_value)
+                next_closest_node = next_closest_bucket[random.randint(0, len(next_closest_bucket) - 1)]
+                response_message = f'RESA:{nodeid}:{ip_address}:{port_no}:{file_name}:{next_closest_node[0]}:{next_closest_node[1]}:{next_closest_node[2]}'
+                my_socket.sendto(response_message.encode(), (leecher_ip_address, leecher_port_no))
                 
 
 
@@ -76,6 +84,8 @@ def update_routing_table(node, mynode_id):
     global routing_table
     mynodeid_bin = bin(int(mynode_id, 16))[2:]
     node_id_bin = bin(int(node[0], 16))[2:]
+    if mynodeid_bin == node_id_bin:
+        return
     prefix = ''
     i = 0
     while i <  len(node_id_bin):
@@ -85,7 +95,10 @@ def update_routing_table(node, mynode_id):
             break
         i += 1
     prefix += node_id_bin[i]
+    append_node = [node[1], int(node[2]), node[0]]
     if prefix in routing_table:
+        if append_node in routing_table[prefix]:
+            return
         routing_table[prefix].append([node[1], int(node[2]), node[0]])
     else:
         routing_table[prefix] = [[node[1], int(node[2]), node[0]]]
@@ -118,9 +131,11 @@ def receive_reply(closest_node, my_socket, piece_hash, nodeid, my_ipaddress, por
             closest_node_ip = data_list[5]
             closest_node_port = int(data_list[6])
             closest_node_id = data_list[7]
+            if closest_node_id == nodeid:
+                return ''
         elif data_list[0] == 'RESP':
-            response = data_list[5:].join(':')
-            update_routing_table(data_list[1:4], nodeid)
+            response = ':'.join(data_list[5:])
+#           update_routing_table(data_list[1:4], nodeid)
             break
     return response
 
@@ -132,7 +147,7 @@ def is_all_received(hash_dict):
     return True
 
 def get_routing_table(node_id, my_socket):
-    bootstrap_ip = "10.100.104.75"
+    bootstrap_ip = "192.168.1.8"
     bootstrap_port_no = 20000
     message = node_id
     my_socket.sendto(message.encode(), (bootstrap_ip, bootstrap_port_no))
@@ -143,11 +158,13 @@ def find_closest_node(random_hash):
     global routing_table
     min_hash_value = 234253
     min_node = None
+    min_key = None
     for key in routing_table:
         if min_node is None:
             if len(routing_table[key]):
                 min_hash_value = int(random_hash, 16) ^ int(routing_table[key][0][2], 16)
                 min_node = routing_table[key][0]
+                min_key = key
                 print('Metric', min_hash_value)
         else:
             if len(routing_table[key]):
@@ -155,21 +172,27 @@ def find_closest_node(random_hash):
                 if current_hash_value < min_hash_value:
                     min_hash_value = current_hash_value
                     min_node = routing_table[key][0]
+                    min_key = key
                     print('Metric', min_hash_value)
-    return min_node
+    if not min_key:
+        return None
+    return routing_table[min_key]
 
 def receive_pieces(hashes, my_ipaddress, port_no, nodeid, my_socket, file_name):
     global routing_table#added
+    global seeder_port
     is_hashpiece_received = {}
     pieces_list = [None for i in range(len(hashes))]
     for piece_hash in hashes:
         is_hashpiece_received[piece_hash] = False
     while not is_all_received(is_hashpiece_received):
-        random_hash = hashes[random.randint(0, len(hashes))]
+        random_hash = hashes[random.randint(0, len(hashes) - 1)]
         if not is_hashpiece_received[random_hash]:
-            closest_node = find_closest_node(random_hash)
+#            closest_bucket = find_closest_node(random_hash)
+#            closest_node = closest_bucket[random.randint(0, len(closest_bucket) - 1)]
+            
+            closest_node = ['127.0.0.1', seeder_port, hashlib.sha1(f'127.0.0.1:{seeder_port}'.encode()).digest().hex()]
             print('closest node', closest_node)
-r           exit()
             if closest_node is None:
                 return None
             response = receive_reply(closest_node, my_socket, random_hash, nodeid, my_ipaddress, port_no,file_name)
@@ -179,7 +202,7 @@ r           exit()
                 pieces_list[hashes.index(random_hash)] = response
     return ''.join(pieces_list)
 
-
+seeder_port = int(input('Enter seeder port: '))
 conn = mysql.connector.connect(host='localhost', password='PetronesTower1.', user='root', database='MyDatabase')
 cursor = conn.cursor()
 print('connection established')
@@ -187,6 +210,7 @@ my_ipaddress = input('Enter your ip address: ')
 port_no = random.randint(20000, 60000)
 my_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 my_socket.bind((my_ipaddress, port_no))
+print('my port no - ', port_no)
 nodeid = hashlib.sha1(f'{my_ipaddress}:{port_no}'.encode()).digest().hex()
 username = None
 passwd = None
@@ -233,7 +257,7 @@ while True:
                         piece_length = file_info['piece-length']
                         received_file = receive_pieces(hashes, my_ipaddress, port_no, nodeid, my_socket,output_filename)
                         if received_file is not None:
-                            with open(output_filename, 'w') as file:
+                            with open(output_filename + 'copy', 'w') as file:
                                 file.write(received_file)
                                 print('File received successfully')
                         else:
@@ -244,7 +268,7 @@ while True:
                     if filename in os.listdir():
                         torrent_file = create_torrent_file(filename, 256)
                     
-                        with open(filename, 'rb') as file:
+                        with open(filename, 'r') as file:
                             file_data = file.read()
                             files_dict[filename] = {}
                             for i in range(0, len(file_data), 256):
@@ -252,8 +276,9 @@ while True:
                                     piece_data = file_data[i:i + 256]
                                 else:
                                     piece_data = file_data[i:]
+                                    print(type(piece_data))
                                 #piece_hash = hashlib.sha1(piece_data.encode()).digest().hex()#added
-                                piece_hash = hashlib.sha1(piece_data).digest().hex()#added
+                                piece_hash = hashlib.sha1(piece_data.encode()).digest().hex()#added
                                 files_dict[filename][piece_hash] = piece_data#added
                         print('File uploaded successfully')
                         print(files_dict[filename])
