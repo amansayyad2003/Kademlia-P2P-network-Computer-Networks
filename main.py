@@ -44,10 +44,10 @@ def seeder(my_socket,ip_address,port_no,nodeid):
         leecher_node_id = message_list[1]
         leecher_ip_address = message_list[2]
         leecher_port_no = int(message_list[3])#added
-#        update_routing_table([leecher_node_id, leecher_ip_address, leecher_port_no], nodeid)
+        update_routing_table([leecher_node_id, leecher_ip_address, leecher_port_no], nodeid)
         file_name = message_list[4]
         hash_value = message_list[5]
-        if filename in files_dict:
+        if file_name in files_dict:
             file_data = files_dict[filename]
             if hash_value in file_data:
                 piece_data = file_data[hash_value]
@@ -85,6 +85,7 @@ def update_routing_table(node, mynode_id):
     mynodeid_bin = bin(int(mynode_id, 16))[2:]
     node_id_bin = bin(int(node[0], 16))[2:]
     if mynodeid_bin == node_id_bin:
+        print('my node id same as the one provided. Not updating routing table')
         return
     prefix = ''
     i = 0
@@ -98,10 +99,13 @@ def update_routing_table(node, mynode_id):
     append_node = [node[1], int(node[2]), node[0]]
     if prefix in routing_table:
         if append_node in routing_table[prefix]:
+            print('node already present. Not updating routing table')
             return
         routing_table[prefix].append([node[1], int(node[2]), node[0]])
+        print('appending node in routing table')
     else:
         routing_table[prefix] = [[node[1], int(node[2]), node[0]]]
+        print('creating entry for node in routing table')
     return
 
 
@@ -110,6 +114,7 @@ def receive_reply(closest_node, my_socket, piece_hash, nodeid, my_ipaddress, por
     global is_leecher_message_present
     response = None
     while True:
+        print(f'requesting for {piece_hash}')
         message = f'REQ:{nodeid}:{my_ipaddress}:{port_no}:{file_name}:{piece_hash}'
         closest_node_ip, closest_node_port, closest_node_id = closest_node
         my_socket.sendto(message.encode(), (closest_node_ip, closest_node_port))
@@ -122,20 +127,25 @@ def receive_reply(closest_node, my_socket, piece_hash, nodeid, my_ipaddress, por
             a = 2
         if time_difference >= 2:
             is_leecher_message_present = False
+            print('timeout')
             return ''
         data = leecher_message
         data = data
         is_leecher_message_present = False
         data_list = data.split(':')
         if data_list[0] == 'RESA':
+            print(f'resa response received from {closest_node_ip}')
             closest_node_ip = data_list[5]
             closest_node_port = int(data_list[6])
             closest_node_id = data_list[7]
+            print(f'forwarding to {closest_node_ip}:{closest_node_port}')
             if closest_node_id == nodeid:
+                print('returning empty string')
                 return ''
         elif data_list[0] == 'RESP':
+            print(f'peice received from {closest_node_ip}')
             response = ':'.join(data_list[5:])
-#           update_routing_table(data_list[1:4], nodeid)
+            update_routing_table(data_list[1:4], nodeid)
             break
     return response
 
@@ -165,7 +175,7 @@ def find_closest_node(random_hash):
                 min_hash_value = int(random_hash, 16) ^ int(routing_table[key][0][2], 16)
                 min_node = routing_table[key][0]
                 min_key = key
-                print('Metric', min_hash_value)
+                print('Initial Metric', min_hash_value)
         else:
             if len(routing_table[key]):
                 current_hash_value = int(random_hash, 16) ^ int(routing_table[key][0][2], 16)
@@ -173,9 +183,11 @@ def find_closest_node(random_hash):
                     min_hash_value = current_hash_value
                     min_node = routing_table[key][0]
                     min_key = key
-                    print('Metric', min_hash_value)
+                    print('updated Metric', min_hash_value)
     if not min_key:
+        print('returning none')
         return None
+    print('return closest node metric - ', min_hash_value)
     return routing_table[min_key]
 
 def receive_pieces(hashes, my_ipaddress, port_no, nodeid, my_socket, file_name):
@@ -188,10 +200,10 @@ def receive_pieces(hashes, my_ipaddress, port_no, nodeid, my_socket, file_name):
     while not is_all_received(is_hashpiece_received):
         random_hash = hashes[random.randint(0, len(hashes) - 1)]
         if not is_hashpiece_received[random_hash]:
-#            closest_bucket = find_closest_node(random_hash)
-#            closest_node = closest_bucket[random.randint(0, len(closest_bucket) - 1)]
+            closest_bucket = find_closest_node(random_hash)
+            closest_node = closest_bucket[random.randint(0, len(closest_bucket) - 1)]
             
-            closest_node = ['127.0.0.1', seeder_port, hashlib.sha1(f'127.0.0.1:{seeder_port}'.encode()).digest().hex()]
+            #closest_node = ['127.0.0.1', seeder_port, hashlib.sha1(f'127.0.0.1:{seeder_port}'.encode()).digest().hex()]
             print('closest node', closest_node)
             if closest_node is None:
                 return None
@@ -202,7 +214,7 @@ def receive_pieces(hashes, my_ipaddress, port_no, nodeid, my_socket, file_name):
                 pieces_list[hashes.index(random_hash)] = response
     return ''.join(pieces_list)
 
-seeder_port = int(input('Enter seeder port: '))
+#seeder_port = int(input('Enter seeder port: '))
 conn = mysql.connector.connect(host='localhost', password='PetronesTower1.', user='root', database='MyDatabase')
 cursor = conn.cursor()
 print('connection established')
