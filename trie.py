@@ -1,4 +1,13 @@
 import random
+# import json
+# import socket
+# import trie
+# import binascii
+
+'''def hex_to_binary(hex_string):
+    binary_data = binascii.unhexlify(hex_string)
+    binary_representation = ''.join(format(byte, '08b') for byte in binary_data)
+    return binary_representation'''
 
 '''hex_values = [
     "bec2f5b914de9d0d43e32f1bee18d502791be0e4",
@@ -105,35 +114,32 @@ class Trie:
 
     def get_node_id(self, index, root2):
         if not root2:
-            print("!")
             return "NULL"
-        root1 = root2
+        # root1 = root2
         index = self.compliment_index(index)
         id_rem = str(index) 
         count = 0
-        root1 = root1.children[index]
-        if not root1:
-            print("@")
+        root2 = root2.children[index]
+        if not root2:
             return "NULL"
-        while not root1.isEndOfWord:
+        while not root2.isEndOfWord:
             while True:
-                ind = random.randint(0, 1)
-                if root1.children[ind] and not root1.isEndOfWord:
-                    id_rem += str(ind)
+                index = random.randint(0, 1)
+                if root2.children[index] and not root2.isEndOfWord:
+                    id_rem += str(index)
                     break
-                if count >= 100:      # TODO: Think once again about it
-                    print("$")
+                if count >= 10:      # TODO: Think once again about it
+                    # print("$")
                     id_rem = "NULL" 
                     return id_rem
                 count = count + 1
-            root1 = root1.children[ind]
+            root2 = root2.children[index]
             count = 0
         return id_rem
 
     def get_bucket_node(self, peer_id):
         mylist = []
         root_node = self.root
-        # print(peer_id)
         length = len(peer_id)
         id_no = ""
         id_no1 = ""
@@ -143,7 +149,7 @@ class Trie:
             # print(i)
             index = peer_id[i]
             id_no2 = self.get_node_id(self.get_index(index), root_node) 
-            print("id_no: " + id_no2)
+            # print("id_no: " + id_no2)
             if id_no2 == "NULL":
                 mylist.insert(len(mylist), None)
                 continue
@@ -164,21 +170,25 @@ class Trie:
 
 '''info_peer = {"00001": ["192.168.0.1", 9000], "00010": ["192.168.0.2", 9001]} '''
 
-if __name__ == '__main__':
+
+'''if __name__ == '__main__':
     t = Trie()
+
+    node_id = hex_to_binary("bec2f5b914de9d0d43e32f1bee18d502791be0e4") 
+    t.insert(node_id)
     t.insert("000")
     t.insert("001")
     t.insert("010")
-    # t.insert("011")
     t.insert("100")
     t.insert("101")
     t.insert("110")
-    t.insert("111")
-    string = t.get_bucket_node("011")
+    t.insert("111") 
+    string = t.get_bucket_node(hex_to_binary("d264d67ead367e2418f8904da6b4a26f020ae6a9"))
+    print(string)
     # x = info_peer[st]
     # x.append(st)
     # print(string)
-    ''' if t.search("0110"):
+    if t.search("0110"):
         print("YEs")
     else:
         print("No") '''
