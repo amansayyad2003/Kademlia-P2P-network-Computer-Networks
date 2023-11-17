@@ -202,10 +202,9 @@ while True:
             #Construct routing table
             routing_table = get_routing_table(nodeid, my_socket)
             print(routing_table)
-            exit()
             seeder_thread = threading.Thread(target=seeder, args=(my_socket,my_ipaddress,port_no,nodeid))
             seeder_thread.start()
-            receive_thread = threading.Thread(target=receive_thread, args=(my_socket))
+            receive_thread = threading.Thread(target=receive_thread, args=(my_socket,))
             receive_thread.start()
             while True:
                 cmd = input('Enter command: ')
@@ -220,14 +219,17 @@ while True:
                         no_of_pieces = len(hashes)
                         piece_length = file_info['piece-length']
                         received_file = receive_pieces(hashes, my_ipaddress, port_no, nodeid, my_socket,output_filename)
-                        with open(output_filename, 'w') as file:
-                            file.write(received_file)
-                            print('File received successfully')
+                        if received_file is not None:
+                            with open(output_filename, 'w') as file:
+                                file.write(received_file)
+                                print('File received successfully')
+                        else:
+                            print('Routing table empty. No info about peers.')
                     else:
                         print(f'{filename} not found in the present directory. Please try again.')
                 elif header == 'upload':
                     if filename in os.listdir():
-                        torrent_file = torrent-generation.create_torrent_file(filename, 256)
+                        torrent_file = create_torrent_file(filename, 256)
                     
                         with open(filename, 'rb') as file:
                             file_data = file.read()
@@ -237,8 +239,11 @@ while True:
                                     piece_data = file_data[i:i + 256]
                                 else:
                                     piece_data = file_data[i:]
-                                piece_hash = hashlib.sha1(piece_data.encode()).digest().hex()#added
+                                #piece_hash = hashlib.sha1(piece_data.encode()).digest().hex()#added
+                                piece_hash = hashlib.sha1(piece_data).digest().hex()#added
                                 files_dict[filename][piece_hash] = piece_data#added
+                        print('File uploaded successfully')
+                        print(files_dict[filename])
                     else:
                         print('file does not exist. try again !!')
 

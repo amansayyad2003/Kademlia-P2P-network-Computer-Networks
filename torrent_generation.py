@@ -55,7 +55,7 @@ def create_torrent_file(file_path, piece_size):
     bencoded_data = bencodepy.encode(torrent_info)
 
     # Write to torrent file
-    with open(filename.split('.')[0] + '.torrent', 'wb') as torrent_file:
+    with open(file_path.split('.')[0] + '.torrent', 'wb') as torrent_file:
         torrent_file.write(bencoded_data)
 
     
