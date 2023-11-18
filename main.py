@@ -113,10 +113,13 @@ def receive_reply(closest_node, my_socket, piece_hash, nodeid, my_ipaddress, por
     global leecher_message
     global is_leecher_message_present
     response = None
+    closest_node_ip = None
+    closest_node_port = None
+    closest_node_id = None
+    closest_node_ip, closest_node_port, closest_node_id = closest_node
     while True:
-        print(f'requesting for {piece_hash}')
         message = f'REQ:{nodeid}:{my_ipaddress}:{port_no}:{file_name}:{piece_hash}'
-        closest_node_ip, closest_node_port, closest_node_id = closest_node
+        print(f'requesting for {piece_hash} to {closest_node_ip}:{closest_node_port}')
         my_socket.sendto(message.encode(), (closest_node_ip, closest_node_port))
         start_time = time.time()
         time_difference = 0
@@ -157,7 +160,7 @@ def is_all_received(hash_dict):
     return True
 
 def get_routing_table(node_id, my_socket):
-    bootstrap_ip = "192.168.1.8"
+    bootstrap_ip = "192.168.193.203"
     bootstrap_port_no = 20000
     message = node_id
     my_socket.sendto(message.encode(), (bootstrap_ip, bootstrap_port_no))
@@ -166,6 +169,10 @@ def get_routing_table(node_id, my_socket):
 
 def find_closest_node(random_hash):
     global routing_table
+    if len(routing_table) > 0:
+        return random.choice(list(routing_table.values()))
+    else:
+        return None
     min_hash_value = 234253
     min_node = None
     min_key = None
