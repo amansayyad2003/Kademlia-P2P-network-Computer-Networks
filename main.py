@@ -48,7 +48,7 @@ def seeder(my_socket,ip_address,port_no,nodeid):
         file_name = message_list[4]
         hash_value = message_list[5]
         if file_name in files_dict:
-            file_data = files_dict[filename]
+            file_data = files_dict[file_name]
             if hash_value in file_data:
                 piece_data = file_data[hash_value]
                 response_message = f'RESP:{nodeid}:{ip_address}:{port_no}:{file_name}:{piece_data}'
@@ -108,6 +108,14 @@ def update_routing_table(node, mynode_id):
         print('creating entry for node in routing table')
     return
 
+def add_piece_to_filedict(file_name, piece):
+    global files_dict
+    piece_hash = hashlib.sha1(piece.encode()).digest().hex()
+    if file_name in files_dict:
+        files_dict[file_name][piece_hash] = piece
+    else:
+        files_dict[file_name] = {}
+        files_dict[file_name][piece_hash] = piece
 
 def receive_reply(closest_node, my_socket, piece_hash, nodeid, my_ipaddress, portno,file_name):
     global leecher_message
@@ -150,6 +158,7 @@ def receive_reply(closest_node, my_socket, piece_hash, nodeid, my_ipaddress, por
             response = ':'.join(data_list[5:])
             update_routing_table(data_list[1:4], nodeid)
             break
+    add_piece_to_filedict(file_name, response)
     return response
 
 def is_all_received(hash_dict):
