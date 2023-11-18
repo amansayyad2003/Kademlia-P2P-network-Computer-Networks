@@ -1,7 +1,7 @@
 import random
 import ast
 import hashlib
-import mysql.connector                                                                                                                                                  
+#import mysql.connector                                                                                                                                                  
 import os
 import threading
 from decode_torrent import *
@@ -232,8 +232,8 @@ def receive_pieces(hashes, my_ipaddress, port_no, nodeid, my_socket, file_name):
     return ''.join(pieces_list)
 
 #seeder_port = int(input('Enter seeder port: '))
-conn = mysql.connector.connect(host='localhost', password='PetronesTower1.', user='root', database='MyDatabase')
-cursor = conn.cursor()
+#conn = mysql.connector.connect(host='localhost', password='PetronesTower1.', user='root', database='MyDatabase')
+#cursor = conn.cursor()
 print('connection established')
 my_ipaddress = input('Enter your ip address: ')
 port_no = random.randint(20000, 60000)
@@ -320,7 +320,7 @@ while True:
         else:
             print('Login failed')
     elif option == 2:
-        username, fullname, passwd = show_signup_menu()
+'''        username, fullname, passwd = show_signup_menu()
         query = "SELECT EXISTS(SELECT 1 FROM userInfo WHERE username = %s)"
         cursor.execute(query, (username,))
         result = cursor.fetchone()
@@ -330,7 +330,7 @@ while True:
         else:
             query = 'INSERT INTO userInfo VALUES(%s, %s, %s)'
             cursor.execute(query, (username, fullname, passwd))
-            conn.commit()
+            conn.commit()'''
             print('Signup successful.')
     else:
         break
