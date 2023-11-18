@@ -320,7 +320,7 @@ while True:
         else:
             print('Login failed')
     elif option == 2:
-'''        username, fullname, passwd = show_signup_menu()
+        '''username, fullname, passwd = show_signup_menu()
         query = "SELECT EXISTS(SELECT 1 FROM userInfo WHERE username = %s)"
         cursor.execute(query, (username,))
         result = cursor.fetchone()
@@ -331,6 +331,6 @@ while True:
             query = 'INSERT INTO userInfo VALUES(%s, %s, %s)'
             cursor.execute(query, (username, fullname, passwd))
             conn.commit()'''
-            print('Signup successful.')
+        print('Signup successful.')
     else:
         break
