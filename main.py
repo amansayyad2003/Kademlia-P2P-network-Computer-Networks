@@ -50,7 +50,7 @@ def seeder(my_socket,ip_address,port_no,nodeid):
         if file_name in files_dict:
             file_data = files_dict[file_name]
             if hash_value in file_data:
-                piece_data = file_data[hash_value]
+                piece_data = file_data[hash_value].decode()
                 response_message = f'RESP:{nodeid}:{ip_address}:{port_no}:{file_name}:{piece_data}'
                 my_socket.sendto(response_message.encode(), (leecher_ip_address, leecher_port_no))
             else:
@@ -112,10 +112,10 @@ def add_piece_to_filedict(file_name, piece):
     global files_dict
     piece_hash = hashlib.sha1(piece.encode()).digest().hex()
     if file_name in files_dict:
-        files_dict[file_name][piece_hash] = piece
+        files_dict[file_name][piece_hash] = piece.encode()
     else:
         files_dict[file_name] = {}
-        files_dict[file_name][piece_hash] = piece
+        files_dict[file_name][piece_hash] = piece.encode()
 
 def receive_reply(closest_node, my_socket, piece_hash, nodeid, my_ipaddress, portno,file_name):
     global leecher_message
@@ -154,7 +154,7 @@ def receive_reply(closest_node, my_socket, piece_hash, nodeid, my_ipaddress, por
                 print('returning empty string')
                 return ''
         elif data_list[0] == 'RESP':
-            print(f'peice received from {closest_node_ip}')
+            print(f'peice received from {closest_node_ip}:{closest_node_port}')
             response = ':'.join(data_list[5:])
             update_routing_table(data_list[1:4], nodeid)
             break
@@ -169,7 +169,7 @@ def is_all_received(hash_dict):
     return True
 
 def get_routing_table(node_id, my_socket):
-    bootstrap_ip = "192.168.193.203"
+    bootstrap_ip = "192.168.193.151"
     bootstrap_port_no = 20000
     message = node_id
     my_socket.sendto(message.encode(), (bootstrap_ip, bootstrap_port_no))
@@ -226,7 +226,8 @@ def receive_pieces(hashes, my_ipaddress, port_no, nodeid, my_socket, file_name):
             response = receive_reply(closest_node, my_socket, random_hash, nodeid, my_ipaddress, port_no,file_name)
             if response != '':
                 is_hashpiece_received[random_hash] = True
-                print(f'{hashes.index(random_hash)} piece received successfully from someone')
+                print(f' piece {hashes.index(random_hash)} received successfully from someone')
+                print()
                 pieces_list[hashes.index(random_hash)] = response
     return ''.join(pieces_list)
 
@@ -296,7 +297,7 @@ while True:
                     if filename in os.listdir():
                         torrent_file = create_torrent_file(filename, 256)
                     
-                        with open(filename, 'r') as file:
+                        with open(filename, 'rb') as file:
                             file_data = file.read()
                             files_dict[filename] = {}
                             for i in range(0, len(file_data), 256):
@@ -306,7 +307,7 @@ while True:
                                     piece_data = file_data[i:]
                                     print(type(piece_data))
                                 #piece_hash = hashlib.sha1(piece_data.encode()).digest().hex()#added
-                                piece_hash = hashlib.sha1(piece_data.encode()).digest().hex()#added
+                                piece_hash = hashlib.sha1(piece_data).digest().hex()#added
                                 files_dict[filename][piece_hash] = piece_data#added
                         print('File uploaded successfully')
                         print(files_dict[filename])
